@@ -1,5 +1,20 @@
 import torch
+from torch import nn
 import matplotlib.pyplot as plt
+
+class LinearRegressionModel(nn.Module):
+    
+    def __init__(self):
+        super().__init__()
+        self.weights = nn.Parameter(torch.randn(
+            1, requires_grad = True, dtype = torch.float
+        ))
+        self.bias = nn.Parameter(torch.rand(
+            1, requires_grad = True, dtype = torch.float
+        ))
+    
+    def forward(self, x : torch.Tensor) -> torch.Tensor:
+        return self.weights * x + self.bias
 
 def plot_predictions(train_data, train_labels, 
                      test_data, test_labels,
@@ -34,7 +49,26 @@ if __name__ == "__main__":
     test_data, test_labels = x[train_split:], y[train_split:]
 
     # make prediction using your model 
-    wrong_pred_labels = test_labels + 0.5 
+    model_0 = LinearRegressionModel()
 
-    # visualize
-    plot_predictions(train_data, train_labels, test_data, test_labels, wrong_pred_labels)
+    # training loop
+    epochs = 100
+    loss_function = nn.L1Loss()
+    optimizer = torch.optim.SGD(
+        params = model_0.parameters(), lr = 0.01 
+    )
+    for epoch in range(epochs):
+        model_0.train()
+        train_pred_labels = model_0(train_data)
+        loss = loss_function(train_pred_labels, train_labels)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+    # predict using the trained model
+    model_0.eval()
+    with torch.inference_mode():
+        test_pred_labels = model_0(test_data)
+        test_loss = loss_function(test_pred_labels, test_labels)
+        # visualize
+        plot_predictions(train_data, train_labels, test_data, test_labels, test_pred_labels)
